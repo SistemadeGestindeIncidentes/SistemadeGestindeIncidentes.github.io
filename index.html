@@ -161,6 +161,10 @@
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/><path d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z"/></svg>
                 <span>Mapa de Calor</span>
             </a></li>
+            <li role="none"><a href="#" role="menuitem" class="sidebar-link" data-section="database">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                <span>Base de Datos</span>
+            </a></li>
         </ul>
         <div class="sidebar-footer">
             <div class="sidebar-role-switch">
@@ -716,6 +720,164 @@
                 </div>
             </div>
         </section>
+
+        <!-- =============== DATABASE & PHOTO GALLERY SECTION =============== -->
+        <section id="section-database" class="section" aria-label="Base de datos de incidentes y evidencias" hidden>
+            <div class="section-container">
+                <div class="section-header">
+                    <h2>Base de Datos de Incidentes</h2>
+                    <p class="section-subtitle">Registro fotográfico, geográfico y documental | Puente Piedra, Lima</p>
+                </div>
+
+                <!-- Database Filter Controls -->
+                <div class="db-controls glass-card">
+                    <div class="db-search-bar">
+                        <div class="search-input-wrapper">
+                            <input type="text" id="db-search-input" class="glass-input" placeholder="Buscar por código, descripción, dirección o reportante..." aria-label="Buscar en la base de datos">
+                            <button class="glass-btn glass-btn-primary" id="db-search-btn" aria-label="Ejecutar búsqueda">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                Buscar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="db-filter-row">
+                        <div class="form-group">
+                            <label for="db-cat-filter" class="form-label">Categoría</label>
+                            <select id="db-cat-filter" class="glass-select" aria-label="Filtrar por categoría">
+                                <option value="">Todas las categorías</option>
+                                <option value="robbery">Robos y Asaltos</option>
+                                <option value="accident">Accidentes de Tránsito</option>
+                                <option value="trash">Acumulación de Basura</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="db-zone-filter" class="form-label">Zona</label>
+                            <select id="db-zone-filter" class="glass-select" aria-label="Filtrar por zona">
+                                <option value="">Todas las zonas</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="db-status-filter" class="form-label">Estado</label>
+                            <select id="db-status-filter" class="glass-select" aria-label="Filtrar por estado">
+                                <option value="">Todos los estados</option>
+                                <option value="pending">Pendiente</option>
+                                <option value="progress">En Proceso</option>
+                                <option value="resolved">Resuelto</option>
+                            </select>
+                        </div>
+                        <div class="form-group db-checkbox-group">
+                            <label class="glass-checkbox">
+                                <input type="checkbox" id="db-only-photos" checked>
+                                <span class="check-custom"></span>
+                                Solo con fotos de evidencia
+                            </label>
+                        </div>
+                        <div class="form-group filter-actions-group">
+                            <button class="glass-btn glass-btn-secondary" id="db-reset-filters">Limpiar Filtros</button>
+                        </div>
+                    </div>
+
+                    <div class="db-meta-bar" role="status" aria-live="polite">
+                        <span>Total de registros en base de datos: <strong id="db-count-total">0</strong></span>
+                        <span class="db-meta-divider">|</span>
+                        <span>Registros con evidencia fotográfica: <strong id="db-count-photos">0</strong></span>
+                    </div>
+                </div>
+
+                <!-- Database Grid / Gallery -->
+                <div class="db-gallery-grid" id="db-gallery-grid" role="region" aria-label="Galería de incidentes">
+                    <!-- Populated by JS -->
+                </div>
+
+                <!-- Database Empty State -->
+                <div class="db-empty-state glass-card" id="db-empty-state" hidden>
+                    <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="var(--color-muted)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2M9 9h.01M15 9h.01"/></svg>
+                    <h3>No se encontraron registros</h3>
+                    <p>No hay incidentes que coincidan con los filtros aplicados. Intenta ampliar los criterios de búsqueda.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal de Autenticación de Operador -->
+    <div class="modal-overlay" id="operator-login-modal" role="dialog" aria-modal="true" aria-labelledby="operator-login-title" hidden>
+        <div class="modal-content glass-panel-modal operator-modal-content">
+            <div class="operator-modal-icon" aria-hidden="true">
+                <div class="shield-badge">
+                    <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="var(--color-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <circle cx="12" cy="11" r="3"/>
+                        <path d="M12 14v3"/>
+                    </svg>
+                </div>
+            </div>
+            <h3 id="operator-login-title">Acceso de Operador</h3>
+            <p class="operator-modal-subtitle">Control Central | Municipalidad de Puente Piedra</p>
+            
+            <div class="credential-tip glass-chip">
+                <span>Credenciales administrativas requeridas</span>
+            </div>
+
+            <form id="operator-login-form" class="operator-form" novalidate>
+                <div class="form-group text-left">
+                    <label for="operator-id" class="form-label">ID de Operador *</label>
+                    <input type="text" id="operator-id" class="glass-input" placeholder="Ingrese ID" autocomplete="username" required>
+                </div>
+
+                <div class="form-group text-left">
+                    <label for="operator-password" class="form-label">Contraseña *</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="operator-password" class="glass-input" placeholder="Ingrese contraseña" autocomplete="current-password" required>
+                        <button type="button" class="btn-toggle-pass" id="btn-toggle-pass" aria-label="Mostrar u ocultar contraseña">
+                            <svg class="icon-eye" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="operator-login-error" class="form-error auth-error-box" role="alert" aria-live="assertive"></div>
+
+                <div class="modal-actions-dual">
+                    <button type="button" class="glass-btn glass-btn-secondary" id="cancel-operator-login">Cancelar</button>
+                    <button type="submit" class="glass-btn glass-btn-primary" id="confirm-operator-login">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+                        Iniciar Sesión
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Visualización de Foto en Pantalla Completa (Lightbox) -->
+    <div class="modal-overlay" id="photo-modal" role="dialog" aria-modal="true" aria-labelledby="photo-modal-title" hidden>
+        <div class="modal-content glass-panel-modal photo-lightbox-content">
+            <div class="lightbox-header">
+                <div>
+                    <h3 id="photo-modal-title" class="lightbox-title">Evidencia Fotográfica</h3>
+                    <p id="photo-modal-subtitle" class="lightbox-subtitle">Reporte Puente Piedra</p>
+                </div>
+                <button type="button" class="glass-btn-icon btn-close-panel" id="close-photo-modal" aria-label="Cerrar visor de foto">✕</button>
+            </div>
+            <div class="lightbox-image-container">
+                <img id="photo-modal-img" src="" alt="Evidencia fotográfica del incidente reportado" class="lightbox-image">
+            </div>
+            <div class="lightbox-meta glass-card-inner">
+                <div class="lightbox-meta-grid">
+                    <div><strong>Código:</strong> <span id="photo-meta-code">-</span></div>
+                    <div><strong>Categoría:</strong> <span id="photo-meta-cat">-</span></div>
+                    <div><strong>Fecha:</strong> <span id="photo-meta-date">-</span></div>
+                    <div><strong>Ubicación:</strong> <span id="photo-meta-loc">-</span></div>
+                </div>
+                <div class="lightbox-meta-desc">
+                    <strong>Descripción:</strong> <span id="photo-meta-desc">-</span>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="glass-btn glass-btn-primary" id="btn-close-photo-modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
 
     </main>
 
