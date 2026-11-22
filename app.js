@@ -131,11 +131,119 @@
         charts: {},
         reportMarker: null,
         reportLatLng: null,
+        pendingReportPhoto: null,
         themePreference: localStorage.getItem('theme-preference') || 'auto',
         fontSize: parseInt(localStorage.getItem('font-size') || '100'),
         highContrast: localStorage.getItem('high-contrast') === 'true',
         reduceMotion: localStorage.getItem('reduce-motion') === 'true'
     };
+
+    // ============================================================
+    // EVIDENCE PHOTO GENERATOR (SVG Vector Evidence Photos)
+    // ============================================================
+    function generateEvidencePhotoSvg(category, id, dateStr, zone) {
+        const catConfig = CONFIG.categories[category] || { label: 'Incidente', color: '#0071e3' };
+        const d = new Date(dateStr);
+        const timeStr = d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const dateFormatted = d.toLocaleDateString('es-PE', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        
+        let themeColor = '#ef4444';
+        let iconSvg = '';
+        let sceneDetails = '';
+
+        if (category === 'robbery') {
+            themeColor = '#ef4444';
+            iconSvg = `
+                <circle cx="200" cy="130" r="46" fill="rgba(239, 68, 68, 0.18)" stroke="#ef4444" stroke-width="2.5"/>
+                <rect x="188" y="122" width="24" height="22" rx="3" fill="none" stroke="#ef4444" stroke-width="3"/>
+                <path d="M193 122 v-9 a7 7 0 0 1 14 0 v9" fill="none" stroke="#ef4444" stroke-width="3"/>
+                <line x1="140" y1="130" x2="260" y2="130" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,4"/>
+                <line x1="200" y1="75" x2="200" y2="185" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,4"/>
+            `;
+            sceneDetails = `
+                <rect x="15" y="70" width="85" height="150" fill="#181c24"/>
+                <rect x="110" y="85" width="60" height="135" fill="#13171e"/>
+                <rect x="290" y="65" width="95" height="155" fill="#181c24"/>
+                <line x1="60" y1="70" x2="60" y2="40" stroke="#718096" stroke-width="2.5"/>
+                <circle cx="60" cy="38" r="5" fill="#fbbf24"/>
+            `;
+        } else if (category === 'accident') {
+            themeColor = '#f59e0b';
+            iconSvg = `
+                <polygon points="200,80 248,168 152,168" fill="rgba(245, 158, 11, 0.18)" stroke="#f59e0b" stroke-width="3"/>
+                <line x1="200" y1="110" x2="200" y2="138" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/>
+                <circle cx="200" cy="152" r="3" fill="#f59e0b"/>
+                <path d="M140 125 l8 4 -4 8 10 -2 4 8 4 -8 10 2 -6 -6 6 -6 -8 2 -4 -8 -4 8 -8 -2z" fill="#f59e0b" opacity="0.8"/>
+            `;
+            sceneDetails = `
+                <polygon points="30,220 370,220 290,140 110,140" fill="#161a22"/>
+                <line x1="200" y1="140" x2="200" y2="220" stroke="#fbbf24" stroke-width="3" stroke-dasharray="8,8"/>
+                <rect x="85" y="155" width="65" height="26" rx="5" fill="#2d3748"/>
+                <circle cx="102" cy="181" r="5.5" fill="#000"/>
+                <circle cx="134" cy="181" r="5.5" fill="#000"/>
+                <rect x="145" y="152" width="60" height="28" rx="5" fill="#4a5568"/>
+                <circle cx="160" cy="180" r="5.5" fill="#000"/>
+                <circle cx="188" cy="180" r="5.5" fill="#000"/>
+            `;
+        } else {
+            themeColor = '#10b981';
+            iconSvg = `
+                <circle cx="200" cy="130" r="44" fill="rgba(16, 185, 129, 0.18)" stroke="#10b981" stroke-width="2.5"/>
+                <path d="M185 116 l4 28 h22 l4 -28 z" fill="none" stroke="#10b981" stroke-width="3"/>
+                <line x1="180" y1="116" x2="220" y2="116" stroke="#10b981" stroke-width="3" stroke-linecap="round"/>
+                <line x1="194" y1="124" x2="194" y2="138" stroke="#10b981" stroke-width="2.5"/>
+                <line x1="206" y1="124" x2="206" y2="138" stroke="#10b981" stroke-width="2.5"/>
+            `;
+            sceneDetails = `
+                <rect x="0" y="160" width="400" height="80" fill="#1c202a"/>
+                <line x1="0" y1="160" x2="400" y2="160" stroke="#4a5568" stroke-width="2"/>
+                <ellipse cx="130" cy="172" rx="24" ry="14" fill="#2d3748"/>
+                <ellipse cx="160" cy="166" rx="18" ry="15" fill="#1a202c"/>
+                <ellipse cx="230" cy="174" rx="28" ry="16" fill="#2d3748"/>
+                <ellipse cx="260" cy="168" rx="18" ry="14" fill="#374151"/>
+                <ellipse cx="195" cy="178" rx="32" ry="13" fill="#1f2937"/>
+            `;
+        }
+
+        const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" width="400" height="240">
+    <defs>
+        <linearGradient id="skyGrad_${id}" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#0a0d14"/>
+            <stop offset="70%" stop-color="#141923"/>
+            <stop offset="100%" stop-color="#1a202c"/>
+        </linearGradient>
+    </defs>
+    
+    <rect width="400" height="240" fill="url(#skyGrad_${id})"/>
+    ${sceneDetails}
+    <rect width="400" height="240" fill="rgba(0,0,0,0.3)"/>
+    
+    ${iconSvg}
+
+    <!-- REC indicator -->
+    <circle cx="24" cy="24" r="5" fill="#ef4444"/>
+    <text x="36" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="700" fill="#ef4444" letter-spacing="1">EVIDENCIA</text>
+
+    <!-- Municipal Stamp -->
+    <text x="24" y="48" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-weight="600" fill="#a0aec0" letter-spacing="0.5">MDPP • SEGURIDAD PUENTE PIEDRA</text>
+    <text x="24" y="62" font-family="Courier New, monospace" font-size="10" fill="#68d391">${id} | CAM-CIUDADANA</text>
+
+    <!-- Crosshair corners -->
+    <path d="M12 12 h16 M12 12 v16" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" fill="none"/>
+    <path d="M388 12 h-16 M388 12 v16" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" fill="none"/>
+    <path d="M12 228 h16 M12 228 v-16" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" fill="none"/>
+    <path d="M388 228 h-16 M388 228 v-16" stroke="rgba(255,255,255,0.45)" stroke-width="1.5" fill="none"/>
+
+    <!-- Bottom HUD Bar -->
+    <rect x="12" y="196" width="376" height="32" rx="6" fill="rgba(0,0,0,0.7)" stroke="rgba(255,255,255,0.12)"/>
+    <text x="24" y="216" font-family="Courier New, monospace" font-size="11" fill="#cbd5e0">${dateFormatted} ${timeStr}</text>
+    <text x="230" y="216" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="10" font-weight="600" fill="${themeColor}">[${zone || 'PUENTE PIEDRA'}]</text>
+</svg>
+        `.trim();
+
+        return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    }
 
     // ============================================================
     // SIMULATED DATA GENERATOR
@@ -222,8 +330,11 @@
             const point = generatePointInDistrict();
             const zone = findNearestZone(point);
 
+            const id = `PP-2026-${String(i + 1).padStart(4, '0')}`;
+            const photo = generateEvidencePhotoSvg(cat, id, date.toISOString(), zone.name);
+
             incidents.push({
-                id: `PP-2026-${String(i + 1).padStart(4, '0')}`,
+                id: id,
                 category: cat,
                 description: descriptions[cat][Math.floor(Math.random() * descriptions[cat].length)],
                 date: date.toISOString(),
@@ -233,6 +344,7 @@
                 zone: zone.name,
                 status: status,
                 reporter: Math.random() > 0.5 ? 'Anónimo' : `Ciudadano ${i + 1}`,
+                photo: photo,
                 isSimulated: true,
                 history: generateHistory(date, status)
             });
@@ -320,11 +432,22 @@
         // Load persisted data or generate
         const saved = localStorage.getItem('pp-incidents');
         if (saved) {
-            try { state.incidents = JSON.parse(saved); } catch (e) { state.incidents = generateSimulatedData(); }
+            try { 
+                state.incidents = JSON.parse(saved); 
+            } catch (e) { 
+                state.incidents = generateSimulatedData(); 
+            }
         } else {
             state.incidents = generateSimulatedData();
-            localStorage.setItem('pp-incidents', JSON.stringify(state.incidents));
         }
+
+        // Ensure all incidents have an evidence photo
+        state.incidents.forEach(inc => {
+            if (!inc.photo) {
+                inc.photo = generateEvidencePhotoSvg(inc.category, inc.id, inc.date, inc.zone);
+            }
+        });
+        localStorage.setItem('pp-incidents', JSON.stringify(state.incidents));
 
         // Apply saved preferences
         applyTheme(state.themePreference);
@@ -343,6 +466,8 @@
         renderRecentIncidents();
         setupReportForm();
         setupTrackSection();
+        setupPhotoModal();
+        initDatabaseSection();
 
         // Set default date values
         const today = new Date().toISOString().split('T')[0];
@@ -411,6 +536,7 @@
         if (section === 'report') initReportMap();
         if (section === 'dashboard') initDashboard();
         if (section === 'heatmap') initHeatmap();
+        if (section === 'database') renderDatabase();
 
         // Scroll to top
         window.scrollTo(0, 0);
@@ -590,38 +716,160 @@
     }
 
     // ============================================================
-    // ROLE SWITCH
+    // ROLE SWITCH & AUTHENTICATION (ID: admin / Password: admin)
     // ============================================================
     function setupRoleSwitch() {
         const sel = document.getElementById('role-select');
-        sel.addEventListener('change', () => {
-            state.currentRole = sel.value;
-            document.getElementById('current-role-label').textContent =
-                sel.value === 'citizen' ? 'Ciudadano' : 'Operador';
+        const roleIndicator = document.getElementById('role-indicator');
+        const modal = document.getElementById('operator-login-modal');
+        const form = document.getElementById('operator-login-form');
+        const idInput = document.getElementById('operator-id');
+        const passInput = document.getElementById('operator-password');
+        const errorEl = document.getElementById('operator-login-error');
+        const cancelBtn = document.getElementById('cancel-operator-login');
+        const togglePassBtn = document.getElementById('btn-toggle-pass');
 
-            // Show/hide operator panel
-            const opPanel = document.getElementById('operator-panel');
-            if (state.currentSection === 'track') {
-                if (sel.value === 'operator') {
-                    opPanel.hidden = false;
-                    renderOperatorList();
+        // Toggle password visibility
+        if (togglePassBtn) {
+            togglePassBtn.addEventListener('click', () => {
+                const isPass = passInput.type === 'password';
+                passInput.type = isPass ? 'text' : 'password';
+                togglePassBtn.setAttribute('aria-label', isPass ? 'Ocultar contraseña' : 'Mostrar contraseña');
+            });
+        }
+
+        function openOperatorLoginModal() {
+            idInput.value = '';
+            passInput.value = '';
+            passInput.type = 'password';
+            errorEl.textContent = '';
+            modal.hidden = false;
+            setTimeout(() => idInput.focus(), 150);
+        }
+
+        function closeOperatorLoginModal(revertSelect = true) {
+            modal.hidden = true;
+            errorEl.textContent = '';
+            if (revertSelect && state.currentRole !== 'operator') {
+                sel.value = 'citizen';
+            }
+        }
+
+        // Click on role indicator badge in top navbar
+        if (roleIndicator) {
+            roleIndicator.style.cursor = 'pointer';
+            roleIndicator.setAttribute('title', 'Haga clic para cambiar entre Ciudadano y Operador');
+            roleIndicator.addEventListener('click', () => {
+                if (state.currentRole === 'citizen') {
+                    openOperatorLoginModal();
                 } else {
-                    opPanel.hidden = true;
+                    setRole('citizen');
+                    showToast('info', 'Rol actualizado', 'Modo cambiado a Ciudadano');
                 }
+            });
+        }
+
+        // Change event on select
+        sel.addEventListener('change', () => {
+            if (sel.value === 'operator') {
+                if (state.currentRole !== 'operator') {
+                    // Revert select temporarily until authenticated
+                    sel.value = 'citizen';
+                    openOperatorLoginModal();
+                }
+            } else {
+                setRole('citizen');
+                showToast('info', 'Rol actualizado', 'Modo cambiado a Ciudadano');
+            }
+        });
+
+        // Cancel button
+        cancelBtn.addEventListener('click', () => {
+            closeOperatorLoginModal(true);
+            showToast('info', 'Acceso cancelado', 'Se mantiene el modo Ciudadano');
+        });
+
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeOperatorLoginModal(true);
+            }
+        });
+
+        // Form submit - STRICT VALIDATION: ID = admin, Password = admin
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const idVal = idInput.value.trim().toLowerCase();
+            const passVal = passInput.value.trim();
+
+            if (!idVal || !passVal) {
+                errorEl.textContent = 'Por favor complete ambos campos: ID y Contraseña.';
+                return;
             }
 
-            showToast('info', 'Rol actualizado', `Ahora estás como ${sel.value === 'citizen' ? 'Ciudadano' : 'Operador'}`);
+            // Exigencia del usuario: ID = admin y Contraseña = admin
+            if (idVal === 'admin' && passVal === 'admin') {
+                closeOperatorLoginModal(false);
+                setRole('operator');
+                showToast('success', 'Acceso Concedido', 'Sesión iniciada como Operador Central (admin)');
+                announceStatus('Sesión de operador iniciada exitosamente.');
+            } else {
+                errorEl.textContent = 'Credenciales inválidas. El ID y la Contraseña deben ser "admin".';
+                passInput.value = '';
+                passInput.focus();
+                showToast('error', 'Acceso Denegado', 'ID o contraseña incorrectos. Ingrese "admin" en ambos.');
+                announceStatus('Error: credenciales de operador incorrectas.');
+            }
         });
+    }
+
+    function setRole(newRole) {
+        state.currentRole = newRole;
+        const sel = document.getElementById('role-select');
+        const label = document.getElementById('current-role-label');
+        const roleIndicator = document.getElementById('role-indicator');
+
+        if (sel) sel.value = newRole;
+        if (label) {
+            label.textContent = newRole === 'citizen' ? 'Ciudadano' : 'Operador (Admin)';
+        }
+
+        if (roleIndicator) {
+            if (newRole === 'operator') {
+                roleIndicator.style.borderColor = 'var(--color-primary)';
+                roleIndicator.style.background = 'var(--color-primary-light)';
+            } else {
+                roleIndicator.style.borderColor = '';
+                roleIndicator.style.background = '';
+            }
+        }
+
+        // Show/hide operator panel in track section
+        const opPanel = document.getElementById('operator-panel');
+        if (opPanel) {
+            if (state.currentSection === 'track') {
+                opPanel.hidden = (newRole !== 'operator');
+                if (newRole === 'operator') renderOperatorList();
+            } else {
+                opPanel.hidden = true;
+            }
+        }
+
+        // Refresh database gallery if currently on database
+        if (state.currentSection === 'database') {
+            renderDatabase();
+        }
     }
 
     // ============================================================
     // ZONE FILTERS
     // ============================================================
     function populateZoneFilters() {
-        const selectors = ['map-zone-filter', 'dash-zone-filter'];
+        const selectors = ['map-zone-filter', 'dash-zone-filter', 'db-zone-filter'];
         selectors.forEach(id => {
             const sel = document.getElementById(id);
             if (!sel) return;
+            sel.innerHTML = '<option value="">Todas las zonas</option>';
             CONFIG.zones.forEach(z => {
                 const opt = document.createElement('option');
                 opt.value = z.name;
@@ -1023,12 +1271,18 @@
         }
         const reader = new FileReader();
         reader.onload = (ev) => {
+            state.pendingReportPhoto = ev.target.result;
             const preview = document.getElementById('photo-preview');
             preview.hidden = false;
             preview.innerHTML = `
                 <img src="${ev.target.result}" alt="Vista previa de la evidencia fotográfica">
-                <button type="button" class="glass-btn glass-btn-sm" onclick="this.parentElement.hidden=true; document.getElementById('incident-photo').value='';">Eliminar</button>
+                <button type="button" class="glass-btn glass-btn-sm" id="btn-delete-report-photo">Eliminar</button>
             `;
+            document.getElementById('btn-delete-report-photo').addEventListener('click', () => {
+                state.pendingReportPhoto = null;
+                document.getElementById('photo-preview').hidden = true;
+                document.getElementById('incident-photo').value = '';
+            });
         };
         reader.readAsDataURL(file);
     }
@@ -1100,6 +1354,9 @@
         const dateTime = new Date(`${date}T${time}`);
         const zone = findNearestZone([lat, lng]);
 
+        // Capture photo or generate realistic municipal camera evidence photo
+        const photo = state.pendingReportPhoto || generateEvidencePhotoSvg(category, id, dateTime.toISOString(), zone.name);
+
         const incident = {
             id,
             category,
@@ -1113,6 +1370,7 @@
             status: 'pending',
             reporter: document.getElementById('reporter-name').value || 'Anónimo',
             contact: document.getElementById('reporter-contact').value || '',
+            photo: photo,
             isSimulated: false,
             history: [{ date: new Date().toISOString(), status: 'pending', note: 'Incidente registrado en el sistema' }]
         };
@@ -1126,6 +1384,7 @@
 
         // Reset form
         e.target.reset();
+        state.pendingReportPhoto = null;
         document.getElementById('incident-date').value = new Date().toISOString().split('T')[0];
         document.getElementById('selected-location-info').hidden = true;
         document.getElementById('photo-preview').hidden = true;
@@ -1136,9 +1395,12 @@
         state.reportLatLng = null;
         document.getElementById('map-selection-hint').textContent = 'Haga clic en el mapa para seleccionar la ubicación del incidente.';
 
-        // Update stats
+        // Update stats & views
         updateHomeStats();
         renderRecentIncidents();
+        if (typeof renderDatabase === 'function') {
+            renderDatabase();
+        }
 
         showToast('success', 'Reporte registrado', `Código: ${id}`);
         announceStatus(`Reporte registrado exitosamente. Código de seguimiento: ${id}`);
@@ -1190,6 +1452,21 @@
                 <div class="track-detail-row"><span class="track-label">Reportante</span><span class="track-value">${incident.reporter}</span></div>
                 <div class="track-detail-row"><span class="track-label">Estado</span><span class="track-value"><span class="incident-status-badge ${statusConfig.cssClass}">${statusConfig.label}</span></span></div>
                 
+                ${incident.photo ? `
+                <div class="track-evidence-section">
+                    <h4 style="margin-bottom: var(--space-xs); display:flex; align-items:center; gap:6px;">
+                        <span>📸 Evidencia Fotográfica Registrada</span>
+                        <span class="glass-chip" style="font-size:11px;">Base de Datos</span>
+                    </h4>
+                    <div class="track-photo-container" onclick="openPhotoModalById('${incident.id}')" title="Haga clic para ampliar la foto en pantalla completa">
+                        <img src="${incident.photo}" alt="Evidencia fotográfica de ${incident.id}" class="track-photo-img">
+                        <div class="track-photo-overlay">
+                            🔍 Clic para ampliar en pantalla completa
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+
                 <div id="track-map-container" class="track-map" role="application" aria-label="Ubicación del incidente en el mapa"></div>
                 
                 <div class="track-history">
@@ -1243,9 +1520,19 @@
             const statusConfig = CONFIG.statuses[inc.status];
             return `
                 <div class="operator-incident" role="listitem">
-                    <div class="operator-incident-info">
-                        <strong><span class="incident-cat-dot ${inc.category}" style="display:inline-block;width:8px;height:8px;border-radius:50;margin-right:6px;"></span> ${inc.id} — ${catConfig.label}</strong>
-                        <small>${inc.description} | ${formatDate(inc.date)} | ${inc.zone}</small>
+                    <div class="operator-row-content">
+                        ${inc.photo ? `
+                        <img src="${inc.photo}" alt="Evidencia ${inc.id}" class="operator-thumb-img" onclick="openPhotoModalById('${inc.id}')" title="Haga clic para ampliar la foto de evidencia">
+                        ` : ''}
+                        <div class="operator-incident-info">
+                            <strong><span class="incident-cat-dot ${inc.category}" style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;"></span> ${inc.id} — ${catConfig.label}</strong>
+                            <small>${inc.description} | ${formatDate(inc.date)} | ${inc.zone}</small>
+                            <div style="margin-top:4px;">
+                                <button type="button" class="operator-photo-badge" onclick="openPhotoModalById('${inc.id}')">
+                                    📸 Ver Evidencia
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <div class="operator-actions" role="group" aria-label="Cambiar estado del incidente ${inc.id}">
                         <button class="operator-btn ${inc.status === 'pending' ? 'active-status' : ''}" data-id="${inc.id}" data-status="pending" aria-label="Marcar como pendiente">Pendiente</button>
@@ -1709,6 +1996,211 @@
 
         document.getElementById('heat-total-count').textContent = filtered.length;
     }
+
+    // ============================================================
+    // PHOTO MODAL & LIGHTBOX
+    // ============================================================
+    function setupPhotoModal() {
+        const modal = document.getElementById('photo-modal');
+        const closeBtn = document.getElementById('close-photo-modal');
+        const btnClose = document.getElementById('btn-close-photo-modal');
+
+        if (closeBtn) closeBtn.addEventListener('click', closePhotoModal);
+        if (btnClose) btnClose.addEventListener('click', closePhotoModal);
+
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closePhotoModal();
+            });
+        }
+    }
+
+    function openPhotoModal(incident) {
+        if (!incident) return;
+        const modal = document.getElementById('photo-modal');
+        const img = document.getElementById('photo-modal-img');
+        const title = document.getElementById('photo-modal-title');
+        const subtitle = document.getElementById('photo-modal-subtitle');
+        const codeEl = document.getElementById('photo-meta-code');
+        const catEl = document.getElementById('photo-meta-cat');
+        const dateEl = document.getElementById('photo-meta-date');
+        const locEl = document.getElementById('photo-meta-loc');
+        const descEl = document.getElementById('photo-meta-desc');
+
+        const catConfig = CONFIG.categories[incident.category] || { label: incident.category };
+
+        img.src = incident.photo || generateEvidencePhotoSvg(incident.category, incident.id, incident.date, incident.zone);
+        title.textContent = `Evidencia: ${incident.id}`;
+        subtitle.textContent = `${catConfig.label} — Distrito de Puente Piedra`;
+        codeEl.textContent = incident.id;
+        catEl.textContent = catConfig.label;
+        dateEl.textContent = formatDate(incident.date);
+        locEl.textContent = `${incident.address} (${incident.zone})`;
+        descEl.textContent = incident.description;
+
+        modal.hidden = false;
+        announceStatus(`Visualizando fotografía de evidencia del reporte ${incident.id}`);
+    }
+
+    function closePhotoModal() {
+        const modal = document.getElementById('photo-modal');
+        if (modal) modal.hidden = true;
+    }
+
+    // ============================================================
+    // DATABASE & PHOTO GALLERY
+    // ============================================================
+    function initDatabaseSection() {
+        // Event listeners for database filters
+        const searchBtn = document.getElementById('db-search-btn');
+        const searchInput = document.getElementById('db-search-input');
+        const catFilter = document.getElementById('db-cat-filter');
+        const zoneFilter = document.getElementById('db-zone-filter');
+        const statusFilter = document.getElementById('db-status-filter');
+        const onlyPhotos = document.getElementById('db-only-photos');
+        const resetBtn = document.getElementById('db-reset-filters');
+
+        if (searchBtn) searchBtn.addEventListener('click', renderDatabase);
+        if (searchInput) {
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') renderDatabase();
+            });
+            searchInput.addEventListener('input', () => {
+                if (!searchInput.value.trim()) renderDatabase();
+            });
+        }
+        if (catFilter) catFilter.addEventListener('change', renderDatabase);
+        if (zoneFilter) zoneFilter.addEventListener('change', renderDatabase);
+        if (statusFilter) statusFilter.addEventListener('change', renderDatabase);
+        if (onlyPhotos) onlyPhotos.addEventListener('change', renderDatabase);
+
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+                if (searchInput) searchInput.value = '';
+                if (catFilter) catFilter.value = '';
+                if (zoneFilter) zoneFilter.value = '';
+                if (statusFilter) statusFilter.value = '';
+                if (onlyPhotos) onlyPhotos.checked = false;
+                renderDatabase();
+            });
+        }
+    }
+
+    function renderDatabase() {
+        const grid = document.getElementById('db-gallery-grid');
+        const emptyState = document.getElementById('db-empty-state');
+        const countTotal = document.getElementById('db-count-total');
+        const countPhotos = document.getElementById('db-count-photos');
+
+        if (!grid) return;
+
+        const search = (document.getElementById('db-search-input')?.value || '').trim().toLowerCase();
+        const cat = document.getElementById('db-cat-filter')?.value || '';
+        const zone = document.getElementById('db-zone-filter')?.value || '';
+        const status = document.getElementById('db-status-filter')?.value || '';
+        const onlyPhotos = document.getElementById('db-only-photos')?.checked || false;
+
+        let filtered = state.incidents.filter(inc => {
+            if (cat && inc.category !== cat) return false;
+            if (zone && inc.zone !== zone) return false;
+            if (status && inc.status !== status) return false;
+            if (onlyPhotos && !inc.photo) return false;
+            if (search) {
+                const text = `${inc.id} ${inc.description} ${inc.address} ${inc.zone} ${inc.reporter}`.toLowerCase();
+                if (!text.includes(search)) return false;
+            }
+            return true;
+        });
+
+        const withPhotosCount = state.incidents.filter(i => Boolean(i.photo)).length;
+        if (countTotal) countTotal.textContent = filtered.length;
+        if (countPhotos) countPhotos.textContent = withPhotosCount;
+
+        if (filtered.length === 0) {
+            grid.innerHTML = '';
+            if (emptyState) emptyState.hidden = false;
+            return;
+        }
+
+        if (emptyState) emptyState.hidden = true;
+
+        grid.innerHTML = filtered.map(inc => {
+            const catConfig = CONFIG.categories[inc.category] || { label: inc.category };
+            const statusConfig = CONFIG.statuses[inc.status] || { label: inc.status, cssClass: '' };
+            const photoSrc = inc.photo || generateEvidencePhotoSvg(inc.category, inc.id, inc.date, inc.zone);
+
+            return `
+                <div class="db-card glass-card" data-id="${inc.id}">
+                    <div class="db-card-media" onclick="openPhotoModalById('${inc.id}')" title="Haga clic para ampliar la foto de evidencia">
+                        <img src="${photoSrc}" alt="Evidencia fotográfica de ${inc.id}" class="db-card-photo" loading="lazy">
+                        <div class="db-card-overlay">
+                            <div class="db-card-top-badges">
+                                <span class="db-badge-photo">📸 Evidencia</span>
+                                <span class="incident-status-badge ${statusConfig.cssClass}">${statusConfig.label}</span>
+                            </div>
+                            <div class="db-card-bottom-info">
+                                <span class="db-zoom-hint">🔍 Ampliar foto</span>
+                                <small style="color:rgba(255,255,255,0.9); font-size:11px;">${formatDate(inc.date)}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="db-card-body">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <span class="db-card-code">${inc.id}</span>
+                            <span class="glass-chip" style="font-size:11px;">${catConfig.label}</span>
+                        </div>
+                        <p class="db-card-desc">${inc.description}</p>
+                        <div class="db-card-location">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            <span>${inc.address} • <strong>${inc.zone}</strong></span>
+                        </div>
+                        <div class="db-card-footer">
+                            <button type="button" class="glass-btn glass-btn-sm" onclick="openPhotoModalById('${inc.id}')">
+                                📸 Ver Foto
+                            </button>
+                            <button type="button" class="glass-btn glass-btn-sm" onclick="viewIncidentOnMap('${inc.id}')">
+                                📍 Mapa
+                            </button>
+                            <button type="button" class="glass-btn glass-btn-sm glass-btn-primary" onclick="trackIncidentById('${inc.id}')">
+                                🔍 Consultar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Window helpers for card button interactions
+    window.openPhotoModalById = function(id) {
+        const inc = state.incidents.find(i => i.id === id);
+        if (inc) openPhotoModal(inc);
+    };
+
+    window.viewIncidentOnMap = function(id) {
+        const inc = state.incidents.find(i => i.id === id);
+        if (!inc) return;
+        navigateTo('map');
+        setTimeout(() => {
+            if (state.maps.main) {
+                state.maps.main.setView([inc.lat, inc.lng], 16);
+                const marker = state.markers.find(m => {
+                    const ll = m.getLatLng();
+                    return Math.abs(ll.lat - inc.lat) < 0.0001 && Math.abs(ll.lng - inc.lng) < 0.0001;
+                });
+                if (marker) marker.openPopup();
+            }
+        }, 300);
+    };
+
+    window.trackIncidentById = function(id) {
+        navigateTo('track');
+        const input = document.getElementById('track-code-input');
+        if (input) {
+            input.value = id;
+            searchIncident();
+        }
+    };
 
     // ============================================================
     // UTILITIES
