@@ -66,6 +66,28 @@
             </div>
         </div>
         <div class="navbar-actions">
+            <div class="glass-chip db-status-chip" id="db-connection-badge" title="Estado de conexión con la Base de Datos en PC" role="status">
+                <span class="db-status-dot local"></span>
+                <span id="db-connection-label">Modo Local</span>
+            </div>
+            <div class="notif-wrapper" id="operator-notif-wrapper" hidden>
+                <button class="glass-btn-icon notif-bell-btn" id="operator-notif-btn" aria-label="Notificaciones del operador" aria-expanded="false" aria-controls="operator-notif-panel" title="Notificaciones de incidentes">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                    <span class="notif-badge" id="operator-notif-badge" hidden>0</span>
+                </button>
+                <div class="notif-panel glass-panel" id="operator-notif-panel" role="dialog" aria-label="Centro de notificaciones del operador" aria-hidden="true">
+                    <div class="notif-panel-header">
+                        <h3>Alertas al Operador</h3>
+                        <button type="button" class="glass-btn glass-btn-sm" id="mark-all-read-btn">Marcar leídas</button>
+                    </div>
+                    <div class="notif-list" id="operator-notif-list">
+                        <p class="notif-empty">No hay notificaciones nuevas.</p>
+                    </div>
+                </div>
+            </div>
             <div class="navbar-role-indicator glass-chip" id="role-indicator" role="status">
                 <span class="role-dot"></span>
                 <span id="current-role-label">Ciudadano</span>
@@ -164,6 +186,7 @@
             <li role="none"><a href="#" role="menuitem" class="sidebar-link" data-section="database">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
                 <span>Base de Datos</span>
+                <span class="nav-lock-badge" id="db-nav-lock" title="Solo Operadores">🔒</span>
             </a></li>
         </ul>
         <div class="sidebar-footer">
@@ -314,6 +337,11 @@
                                 <span class="check-custom trash-color"></span>
                                 Acumulación de Basura
                             </label>
+                            <label class="glass-checkbox">
+                                <input type="checkbox" checked data-filter-cat="other"> 
+                                <span class="check-custom other-color"></span>
+                                Otros Incidentes
+                            </label>
                         </div>
                     </div>
                     <div class="map-filter-group">
@@ -343,6 +371,7 @@
                     <div class="legend-item"><span class="legend-dot robbery-dot"></span> Robos y Asaltos</div>
                     <div class="legend-item"><span class="legend-dot accident-dot"></span> Accidentes de Tránsito</div>
                     <div class="legend-item"><span class="legend-dot trash-dot"></span> Acumulación de Basura</div>
+                    <div class="legend-item"><span class="legend-dot other-dot"></span> Otros Incidentes</div>
                     <div class="legend-item"><span class="legend-line district-line"></span> Límite distrital</div>
                 </div>
             </div>
@@ -367,20 +396,35 @@
                                 <option value="robbery">Robos y Asaltos</option>
                                 <option value="accident">Accidentes de Tránsito</option>
                                 <option value="trash">Acumulación de Basura</option>
+                                <option value="other">Otros (especificar otro incidente)</option>
                             </select>
                             <span class="form-error" id="category-error" role="alert" aria-live="assertive"></span>
                         </div>
 
-                        <div class="form-group">
-                            <label for="incident-date" class="form-label">Fecha del incidente *</label>
-                            <input type="date" id="incident-date" class="glass-input" required aria-required="true">
-                            <span class="form-error" id="date-error" role="alert" aria-live="assertive"></span>
+                        <div class="form-group other-category-group" id="other-category-group" hidden>
+                            <label for="incident-other-category" class="form-label">Especifique el tipo de incidente *</label>
+                            <input type="text" id="incident-other-category" class="glass-input" placeholder="Ej: Luminaria apagada, fuga de agua, ruidos molestos, vandalismo..." maxlength="80">
+                            <span class="form-error" id="other-category-error" role="alert" aria-live="assertive"></span>
                         </div>
 
-                        <div class="form-group">
-                            <label for="incident-time" class="form-label">Hora aproximada *</label>
-                            <input type="time" id="incident-time" class="glass-input" required aria-required="true">
-                            <span class="form-error" id="time-error" role="alert" aria-live="assertive"></span>
+                        <div class="datetime-row">
+                            <div class="form-group">
+                                <label for="incident-date" class="form-label">Fecha del incidente *</label>
+                                <input type="date" id="incident-date" class="glass-input" required aria-required="true">
+                                <span class="form-error" id="date-error" role="alert" aria-live="assertive"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="label-with-badge">
+                                    <label for="incident-time" class="form-label">Hora del incidente *</label>
+                                    <span class="auto-time-badge glass-chip" title="Se coloca automáticamente la hora actual">⏱️ Automática</span>
+                                </div>
+                                <div class="time-input-group">
+                                    <input type="time" id="incident-time" class="glass-input" required aria-required="true">
+                                    <button type="button" class="glass-btn glass-btn-sm btn-refresh-time" id="refresh-auto-time" title="Actualizar a la hora actual">Ahora</button>
+                                </div>
+                                <span class="form-error" id="time-error" role="alert" aria-live="assertive"></span>
+                            </div>
                         </div>
 
                         <div class="form-group">
@@ -446,10 +490,10 @@
                     </div>
 
                     <div class="form-step" data-step="3">
-                        <h3 class="form-step-title">3. Evidencia (Opcional)</h3>
+                        <h3 class="form-step-title">3. Evidencia y Datos del Ciudadano</h3>
                         
                         <div class="form-group">
-                            <label for="incident-photo" class="form-label">Fotografía de evidencia</label>
+                            <label for="incident-photo" class="form-label">Fotografía de evidencia (Opcional)</label>
                             <div class="file-upload glass-card-inner" role="button" tabindex="0" aria-label="Subir fotografía de evidencia" id="photo-upload-area">
                                 <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                 <p>Haga clic o arrastre una imagen</p>
@@ -459,15 +503,20 @@
                             <div id="photo-preview" class="photo-preview" hidden></div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="reporter-name" class="form-label">Nombre del reportante (Opcional)</label>
-                            <input type="text" id="reporter-name" class="glass-input" placeholder="Anónimo si se deja vacío">
-                        </div>
+                        <div class="reporter-contact-grid">
+                            <div class="form-group">
+                                <label for="reporter-name" class="form-label">Nombres y Apellidos *</label>
+                                <input type="text" id="reporter-name" class="glass-input" placeholder="Ej: Juan Carlos Pérez Quispe" required aria-required="true">
+                                <span class="form-error" id="reporter-name-error" role="alert" aria-live="assertive"></span>
+                            </div>
 
-                        <div class="form-group">
-                            <label for="reporter-contact" class="form-label">Contacto (Opcional)</label>
-                            <input type="text" id="reporter-contact" class="glass-input" placeholder="Teléfono o correo electrónico">
+                            <div class="form-group">
+                                <label for="reporter-contact" class="form-label">Número de Celular *</label>
+                                <input type="tel" id="reporter-contact" class="glass-input" placeholder="Ej: 987 654 321" maxlength="15" required aria-required="true">
+                                <span class="form-error" id="reporter-phone-error" role="alert" aria-live="assertive"></span>
+                            </div>
                         </div>
+                        <p class="form-hint">🔒 Por privacidad, su nombre completo y número de celular solo serán visibles para el Operador Municipal autorizado.</p>
                     </div>
 
                     <div class="form-actions">
@@ -577,6 +626,7 @@
                                 <option value="robbery">Robos y Asaltos</option>
                                 <option value="accident">Accidentes de Tránsito</option>
                                 <option value="trash">Acumulación de Basura</option>
+                                <option value="other">Otros Incidentes</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -689,6 +739,11 @@
                             <span class="check-custom trash-color"></span>
                             Acumulación de Basura
                         </label>
+                        <label class="glass-checkbox">
+                            <input type="checkbox" checked id="heat-other"> 
+                            <span class="check-custom other-color"></span>
+                            Otros Incidentes
+                        </label>
                     </div>
 
                     <div class="heatmap-filter-group">
@@ -721,80 +776,94 @@
             </div>
         </section>
 
-        <!-- =============== DATABASE & PHOTO GALLERY SECTION =============== -->
+        <!-- =============== DATABASE & PHOTO GALLERY SECTION (OPERATOR ONLY) =============== -->
         <section id="section-database" class="section" aria-label="Base de datos de incidentes y evidencias" hidden>
             <div class="section-container">
                 <div class="section-header">
                     <h2>Base de Datos de Incidentes</h2>
-                    <p class="section-subtitle">Registro fotográfico, geográfico y documental | Puente Piedra, Lima</p>
+                    <p class="section-subtitle">Registro fotográfico, datos de contacto y evidencias | Puente Piedra, Lima</p>
                 </div>
 
-                <!-- Database Filter Controls -->
-                <div class="db-controls glass-card">
-                    <div class="db-search-bar">
-                        <div class="search-input-wrapper">
-                            <input type="text" id="db-search-input" class="glass-input" placeholder="Buscar por código, descripción, dirección o reportante..." aria-label="Buscar en la base de datos">
-                            <button class="glass-btn glass-btn-primary" id="db-search-btn" aria-label="Ejecutar búsqueda">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                                Buscar
-                            </button>
+                <!-- Acceso Restringido para Ciudadanos -->
+                <div id="db-locked-notice" class="db-locked-card glass-card">
+                    <div class="locked-icon-circle" aria-hidden="true">🔒</div>
+                    <h3>Acceso Exclusivo para Operadores</h3>
+                    <p>Por privacidad y protección de datos personales (nombres, apellidos, números celulares y fotografías), la Base de Datos Municipal está restringida al personal operador autorizado.</p>
+                    <button type="button" class="glass-btn glass-btn-primary" id="db-unlock-btn">
+                        🔑 Iniciar Sesión como Operador
+                    </button>
+                </div>
+
+                <!-- Contenido Autorizado para Operador -->
+                <div id="db-authorized-content" hidden>
+                    <!-- Database Filter Controls -->
+                    <div class="db-controls glass-card">
+                        <div class="db-search-bar">
+                            <div class="search-input-wrapper">
+                                <input type="text" id="db-search-input" class="glass-input" placeholder="Buscar por código, descripción, nombre, celular o dirección..." aria-label="Buscar en la base de datos">
+                                <button class="glass-btn glass-btn-primary" id="db-search-btn" aria-label="Ejecutar búsqueda">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                    Buscar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="db-filter-row">
+                            <div class="form-group">
+                                <label for="db-cat-filter" class="form-label">Categoría</label>
+                                <select id="db-cat-filter" class="glass-select" aria-label="Filtrar por categoría">
+                                    <option value="">Todas las categorías</option>
+                                    <option value="robbery">Robos y Asaltos</option>
+                                    <option value="accident">Accidentes de Tránsito</option>
+                                    <option value="trash">Acumulación de Basura</option>
+                                    <option value="other">Otros Incidentes</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="db-zone-filter" class="form-label">Zona</label>
+                                <select id="db-zone-filter" class="glass-select" aria-label="Filtrar por zona">
+                                    <option value="">Todas las zonas</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="db-status-filter" class="form-label">Estado</label>
+                                <select id="db-status-filter" class="glass-select" aria-label="Filtrar por estado">
+                                    <option value="">Todos los estados</option>
+                                    <option value="pending">Pendiente</option>
+                                    <option value="progress">En Proceso</option>
+                                    <option value="resolved">Resuelto</option>
+                                </select>
+                            </div>
+                            <div class="form-group db-checkbox-group">
+                                <label class="glass-checkbox">
+                                    <input type="checkbox" id="db-only-photos" checked>
+                                    <span class="check-custom"></span>
+                                    Solo con fotos de evidencia
+                                </label>
+                            </div>
+                            <div class="form-group filter-actions-group">
+                                <button class="glass-btn glass-btn-secondary" id="db-reset-filters">Limpiar Filtros</button>
+                            </div>
+                        </div>
+
+                        <div class="db-meta-bar" role="status" aria-live="polite">
+                            <span>Total de registros en base de datos: <strong id="db-count-total">0</strong></span>
+                            <span class="db-meta-divider">|</span>
+                            <span>Registros con evidencia fotográfica: <strong id="db-count-photos">0</strong></span>
                         </div>
                     </div>
 
-                    <div class="db-filter-row">
-                        <div class="form-group">
-                            <label for="db-cat-filter" class="form-label">Categoría</label>
-                            <select id="db-cat-filter" class="glass-select" aria-label="Filtrar por categoría">
-                                <option value="">Todas las categorías</option>
-                                <option value="robbery">Robos y Asaltos</option>
-                                <option value="accident">Accidentes de Tránsito</option>
-                                <option value="trash">Acumulación de Basura</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="db-zone-filter" class="form-label">Zona</label>
-                            <select id="db-zone-filter" class="glass-select" aria-label="Filtrar por zona">
-                                <option value="">Todas las zonas</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="db-status-filter" class="form-label">Estado</label>
-                            <select id="db-status-filter" class="glass-select" aria-label="Filtrar por estado">
-                                <option value="">Todos los estados</option>
-                                <option value="pending">Pendiente</option>
-                                <option value="progress">En Proceso</option>
-                                <option value="resolved">Resuelto</option>
-                            </select>
-                        </div>
-                        <div class="form-group db-checkbox-group">
-                            <label class="glass-checkbox">
-                                <input type="checkbox" id="db-only-photos" checked>
-                                <span class="check-custom"></span>
-                                Solo con fotos de evidencia
-                            </label>
-                        </div>
-                        <div class="form-group filter-actions-group">
-                            <button class="glass-btn glass-btn-secondary" id="db-reset-filters">Limpiar Filtros</button>
-                        </div>
+                    <!-- Database Grid / Gallery -->
+                    <div class="db-gallery-grid" id="db-gallery-grid" role="region" aria-label="Galería de incidentes">
+                        <!-- Populated by JS -->
                     </div>
 
-                    <div class="db-meta-bar" role="status" aria-live="polite">
-                        <span>Total de registros en base de datos: <strong id="db-count-total">0</strong></span>
-                        <span class="db-meta-divider">|</span>
-                        <span>Registros con evidencia fotográfica: <strong id="db-count-photos">0</strong></span>
+                    <!-- Database Empty State -->
+                    <div class="db-empty-state glass-card" id="db-empty-state" hidden>
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="var(--color-muted)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2M9 9h.01M15 9h.01"/></svg>
+                        <h3>No se encontraron registros</h3>
+                        <p>No hay incidentes que coincidan con los filtros aplicados. Intenta ampliar los criterios de búsqueda.</p>
                     </div>
-                </div>
-
-                <!-- Database Grid / Gallery -->
-                <div class="db-gallery-grid" id="db-gallery-grid" role="region" aria-label="Galería de incidentes">
-                    <!-- Populated by JS -->
-                </div>
-
-                <!-- Database Empty State -->
-                <div class="db-empty-state glass-card" id="db-empty-state" hidden>
-                    <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="var(--color-muted)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2M9 9h.01M15 9h.01"/></svg>
-                    <h3>No se encontraron registros</h3>
-                    <p>No hay incidentes que coincidan con los filtros aplicados. Intenta ampliar los criterios de búsqueda.</p>
                 </div>
             </div>
         </section>
@@ -814,7 +883,7 @@
                 </div>
             </div>
             <h3 id="operator-login-title">Acceso de Operador</h3>
-            <p class="operator-modal-subtitle">Control Central | Municipalidad de Puente Piedra</p>
+            <p class="operator-modal-subtitle" id="operator-login-subtitle">Control Central | Municipalidad de Puente Piedra</p>
             
             <div class="credential-tip glass-chip">
                 <span>Credenciales administrativas requeridas</span>
@@ -869,6 +938,10 @@
                     <div><strong>Fecha:</strong> <span id="photo-meta-date">-</span></div>
                     <div><strong>Ubicación:</strong> <span id="photo-meta-loc">-</span></div>
                 </div>
+                <div class="lightbox-meta-reporter" id="photo-meta-reporter-row" hidden>
+                    <div><strong>Ciudadano:</strong> <span id="photo-meta-reporter">-</span></div>
+                    <div><strong>Celular:</strong> <span id="photo-meta-phone">-</span></div>
+                </div>
                 <div class="lightbox-meta-desc">
                     <strong>Descripción:</strong> <span id="photo-meta-desc">-</span>
                 </div>
@@ -878,8 +951,6 @@
             </div>
         </div>
     </div>
-
-    </main>
 
     <!-- Notification Toast -->
     <div class="toast-container" id="toast-container" role="region" aria-label="Notificaciones" aria-live="polite"></div>
