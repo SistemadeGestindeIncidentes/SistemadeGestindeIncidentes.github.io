@@ -108,7 +108,8 @@
         categories: {
             robbery: { label: 'Robos y Asaltos', color: '#ef4444', icon: '🔒' },
             accident: { label: 'Accidentes de Tránsito', color: '#f59e0b', icon: '⚡' },
-            trash: { label: 'Acumulación de Basura', color: '#10b981', icon: '🗑️' }
+            trash: { label: 'Acumulación de Basura', color: '#10b981', icon: '🗑️' },
+            other: { label: 'Otros Incidentes', color: '#8b5cf6', icon: '📌' }
         },
         statuses: {
             pending: { label: 'Pendiente', color: '#f59e0b', cssClass: 'status-pending' },
@@ -132,11 +133,29 @@
         reportMarker: null,
         reportLatLng: null,
         pendingReportPhoto: null,
+        pendingNavigationAfterLogin: null,
+        serverConnected: false,
+        apiBase: window.location.protocol === 'file:' ? 'http://localhost:8000' : '',
+        notifications: [],
+        knownIncidentIds: new Set(),
+        pollTimer: null,
+        broadcastChannel: null,
         themePreference: localStorage.getItem('theme-preference') || 'auto',
         fontSize: parseInt(localStorage.getItem('font-size') || '100'),
         highContrast: localStorage.getItem('high-contrast') === 'true',
         reduceMotion: localStorage.getItem('reduce-motion') === 'true'
     };
+
+    function getCategoryConfig(inc) {
+        const base = CONFIG.categories[inc.category] || CONFIG.categories.other;
+        if (inc.category === 'other' && inc.customCategory) {
+            return {
+                ...base,
+                label: `Otros: ${inc.customCategory}`
+            };
+        }
+        return base;
+    }
 
     // ============================================================
     // EVIDENCE PHOTO GENERATOR (SVG Vector Evidence Photos)
@@ -185,7 +204,7 @@
                 <circle cx="160" cy="180" r="5.5" fill="#000"/>
                 <circle cx="188" cy="180" r="5.5" fill="#000"/>
             `;
-        } else {
+        } else if (category === 'trash') {
             themeColor = '#10b981';
             iconSvg = `
                 <circle cx="200" cy="130" r="44" fill="rgba(16, 185, 129, 0.18)" stroke="#10b981" stroke-width="2.5"/>
@@ -202,6 +221,19 @@
                 <ellipse cx="230" cy="174" rx="28" ry="16" fill="#2d3748"/>
                 <ellipse cx="260" cy="168" rx="18" ry="14" fill="#374151"/>
                 <ellipse cx="195" cy="178" rx="32" ry="13" fill="#1f2937"/>
+            `;
+        } else {
+            themeColor = '#8b5cf6';
+            iconSvg = `
+                <circle cx="200" cy="130" r="44" fill="rgba(139, 92, 246, 0.2)" stroke="#8b5cf6" stroke-width="2.5"/>
+                <circle cx="200" cy="118" r="10" fill="none" stroke="#8b5cf6" stroke-width="3"/>
+                <path d="M200 128 v24" stroke="#8b5cf6" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="200" cy="160" r="3" fill="#8b5cf6"/>
+            `;
+            sceneDetails = `
+                <rect x="20" y="85" width="75" height="135" fill="#181c24"/>
+                <rect x="305" y="75" width="75" height="145" fill="#181c24"/>
+                <rect x="0" y="170" width="400" height="70" fill="#1b1f29"/>
             `;
         }
 
@@ -286,8 +318,36 @@
                 'Residuos domésticos arrojados en la calle',
                 'Basura acumulada junto a contenedor lleno',
                 'Desechos en área verde del parque'
+            ],
+            other: [
+                'Poste de alumbrado público apagado desde hace 3 noches',
+                'Fuga de agua potable en vereda de la manzana',
+                'Ruidos molestos en local nocturno fuera de horario',
+                'Tapa de buzón de desagüe robada en la pista',
+                'Árbol inclinado con riesgo de caída sobre cables'
             ]
         };
+
+        const customOtherLabels = [
+            'Luminaria pública apagada',
+            'Fuga de agua potable',
+            'Ruidos molestos',
+            'Buzón sin tapa',
+            'Poste en riesgo de caída'
+        ];
+
+        const citizenNames = [
+            'Juan Carlos Mendoza Ríos',
+            'María Elena Quispe Huamán',
+            'Luis Alberto Flores Paredes',
+            'Rosaura Castillo Vega',
+            'Carlos Eduardo Rojas Chávez',
+            'Ana Lucía Vargas Torres',
+            'Jorge Luis Ramírez Díaz',
+            'Carmen Rosa Sánchez Cruz',
+            'Pedro Pablo Salazar León',
+            'Lucía Fernanda Herrera Soto'
+        ];
 
         const addresses = [
             'Av. Puente Piedra cdra. 5',
@@ -312,7 +372,7 @@
             'Av. Industrial cdra. 11'
         ];
 
-        const catKeys = ['robbery', 'accident', 'trash'];
+        const catKeys = ['robbery', 'accident', 'trash', 'robbery', 'accident', 'trash', 'other'];
         const statusKeys = ['pending', 'progress', 'resolved'];
         const now = new Date();
 
@@ -332,18 +392,24 @@
 
             const id = `PP-2026-${String(i + 1).padStart(4, '0')}`;
             const photo = generateEvidencePhotoSvg(cat, id, date.toISOString(), zone.name);
+            const randomDescIdx = Math.floor(Math.random() * descriptions[cat].length);
+            const customCat = cat === 'other' ? customOtherLabels[randomDescIdx % customOtherLabels.length] : '';
+            const fullName = citizenNames[i % citizenNames.length];
+            const phone = `9${String(10000000 + ((i * 73856093) % 89999999)).slice(0, 8)}`;
 
             incidents.push({
                 id: id,
                 category: cat,
-                description: descriptions[cat][Math.floor(Math.random() * descriptions[cat].length)],
+                customCategory: customCat,
+                description: descriptions[cat][randomDescIdx],
                 date: date.toISOString(),
                 lat: point[0],
                 lng: point[1],
                 address: addresses[Math.floor(Math.random() * addresses.length)],
                 zone: zone.name,
                 status: status,
-                reporter: Math.random() > 0.5 ? 'Anónimo' : `Ciudadano ${i + 1}`,
+                reporter: fullName,
+                phone: phone,
                 photo: photo,
                 isSimulated: true,
                 history: generateHistory(date, status)
@@ -426,6 +492,312 @@
     }
 
     // ============================================================
+    // AUTO DATE/TIME HELPER
+    // ============================================================
+    function setCurrentDateTime() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+
+        const todayStr = `${year}-${month}-${day}`;
+        const timeStr = `${hours}:${minutes}`;
+
+        const dateEl = document.getElementById('incident-date');
+        const timeEl = document.getElementById('incident-time');
+        if (dateEl) {
+            dateEl.value = todayStr;
+            dateEl.max = todayStr;
+        }
+        if (timeEl) {
+            timeEl.value = timeStr;
+        }
+    }
+
+    // ============================================================
+    // PC DATABASE SYNC & REALTIME POLLING
+    // ============================================================
+    function getOperatorHeaders() {
+        const headers = { 'Content-Type': 'application/json' };
+        if (state.currentRole === 'operator') {
+            headers['X-Operator-Auth'] = 'admin:admin';
+        }
+        return headers;
+    }
+
+    function updateDbConnectionUI(connected) {
+        state.serverConnected = connected;
+        const badge = document.getElementById('db-connection-badge');
+        const label = document.getElementById('db-connection-label');
+        if (!badge || !label) return;
+        const dot = badge.querySelector('.db-status-dot');
+        if (connected) {
+            if (dot) { dot.classList.remove('local'); dot.classList.add('connected'); }
+            label.textContent = 'BD PC Conectada';
+            badge.title = 'Conectado a la base de datos SQLite en tu PC';
+        } else {
+            if (dot) { dot.classList.remove('connected'); dot.classList.add('local'); }
+            label.textContent = 'Modo Local';
+            badge.title = 'Almacenamiento en navegador. Ejecuta iniciar_servidor_bd.bat para BD en PC.';
+        }
+    }
+
+    async function initBackendSync() {
+        try {
+            const res = await fetch(`${state.apiBase}/api/health`, { method: 'GET' });
+            if (!res.ok) throw new Error('Server offline');
+            const health = await res.json();
+            updateDbConnectionUI(true);
+
+            if (health.total_records === 0 && state.incidents.length > 0) {
+                await fetch(`${state.apiBase}/api/seed`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ incidents: state.incidents })
+                });
+            }
+
+            await fetchIncidentsFromPC(false);
+            startRealtimePolling();
+        } catch (err) {
+            updateDbConnectionUI(false);
+        }
+
+        // Cross-tab BroadcastChannel for local browser testing across tabs
+        if (typeof BroadcastChannel !== 'undefined') {
+            state.broadcastChannel = new BroadcastChannel('pp_puente_piedra_incidents');
+            state.broadcastChannel.onmessage = (event) => {
+                if (event.data && event.data.type === 'NEW_INCIDENT') {
+                    const newInc = event.data.incident;
+                    if (!state.knownIncidentIds.has(newInc.id)) {
+                        state.knownIncidentIds.add(newInc.id);
+                        state.incidents.unshift(newInc);
+                        localStorage.setItem('pp-incidents', JSON.stringify(state.incidents));
+                        refreshAllViews();
+                        notifyOperator(newInc);
+                    }
+                } else if (event.data && event.data.type === 'STATUS_UPDATED') {
+                    const { id, status, history } = event.data;
+                    const inc = state.incidents.find(i => i.id === id);
+                    if (inc) {
+                        inc.status = status;
+                        inc.history = history;
+                        localStorage.setItem('pp-incidents', JSON.stringify(state.incidents));
+                        refreshAllViews();
+                    }
+                }
+            };
+        }
+    }
+
+    async function fetchIncidentsFromPC(detectNew = true) {
+        if (!state.serverConnected) return;
+        try {
+            const res = await fetch(`${state.apiBase}/api/incidents`, {
+                method: 'GET',
+                headers: getOperatorHeaders()
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            const serverIncidents = data.incidents || [];
+
+            if (detectNew && state.knownIncidentIds.size > 0) {
+                const newlyArrived = serverIncidents.filter(inc => !state.knownIncidentIds.has(inc.id));
+                if (newlyArrived.length > 0) {
+                    newlyArrived.forEach(inc => {
+                        state.knownIncidentIds.add(inc.id);
+                        notifyOperator(inc);
+                    });
+                }
+            } else {
+                serverIncidents.forEach(inc => state.knownIncidentIds.add(inc.id));
+            }
+
+            state.incidents = serverIncidents;
+            localStorage.setItem('pp-incidents', JSON.stringify(state.incidents));
+            refreshAllViews();
+        } catch (e) {
+            // Silently ignore transient polling errors
+        }
+    }
+
+    function startRealtimePolling() {
+        if (state.pollTimer) clearInterval(state.pollTimer);
+        state.pollTimer = setInterval(() => {
+            fetchIncidentsFromPC(true);
+        }, 4000);
+    }
+
+    function refreshAllViews() {
+        updateHomeStats();
+        renderRecentIncidents();
+        if (state.maps.main) updateMapMarkers();
+        if (state.currentSection === 'dashboard') {
+            updateDashboardStats();
+            updateCharts();
+        }
+        if (state.currentSection === 'heatmap') updateHeatLayer();
+        if (state.currentSection === 'track' && state.currentRole === 'operator') {
+            renderOperatorList();
+        }
+        if (state.currentSection === 'database' && state.currentRole === 'operator') {
+            renderDatabase();
+        }
+    }
+
+    // ============================================================
+    // OPERATOR NOTIFICATIONS SYSTEM
+    // ============================================================
+    function setupOperatorNotifications() {
+        const savedNotifs = localStorage.getItem('pp-operator-notifications');
+        if (savedNotifs) {
+            try { state.notifications = JSON.parse(savedNotifs); } catch (e) { state.notifications = []; }
+        }
+
+        const bellBtn = document.getElementById('operator-notif-btn');
+        const panel = document.getElementById('operator-notif-panel');
+        const markAllBtn = document.getElementById('mark-all-read-btn');
+
+        if (bellBtn && panel) {
+            bellBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isOpen = panel.getAttribute('aria-hidden') === 'false';
+                panel.setAttribute('aria-hidden', isOpen ? 'true' : 'false');
+                bellBtn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!panel.contains(e.target) && e.target !== bellBtn) {
+                    panel.setAttribute('aria-hidden', 'true');
+                    bellBtn.setAttribute('aria-expanded', 'false');
+                }
+            });
+        }
+
+        if (markAllBtn) {
+            markAllBtn.addEventListener('click', () => {
+                state.notifications.forEach(n => n.read = true);
+                localStorage.setItem('pp-operator-notifications', JSON.stringify(state.notifications));
+                renderNotifications();
+            });
+        }
+
+        renderNotifications();
+    }
+
+    function playNotificationSound() {
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            const ctx = new AudioCtx();
+            const now = ctx.currentTime;
+
+            const osc1 = ctx.createOscillator();
+            const gain1 = ctx.createGain();
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(587.33, now); // D5
+            osc1.frequency.setValueAtTime(880, now + 0.12); // A5
+            gain1.gain.setValueAtTime(0.18, now);
+            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+            osc1.connect(gain1);
+            gain1.connect(ctx.destination);
+            osc1.start(now);
+            osc1.stop(now + 0.45);
+        } catch (e) {
+            // Audio blocked before user interaction
+        }
+    }
+
+    function notifyOperator(incident) {
+        const catConfig = getCategoryConfig(incident);
+        const notif = {
+            id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            incidentId: incident.id,
+            categoryLabel: catConfig.label,
+            reporter: incident.reporter || 'Ciudadano',
+            phone: incident.phone || incident.contact || '',
+            zone: incident.zone || 'Puente Piedra',
+            date: incident.date || new Date().toISOString(),
+            read: false
+        };
+
+        // Avoid duplicate notification for same incident ID
+        if (!state.notifications.some(n => n.incidentId === incident.id)) {
+            state.notifications.unshift(notif);
+            if (state.notifications.length > 30) state.notifications.pop();
+            localStorage.setItem('pp-operator-notifications', JSON.stringify(state.notifications));
+        }
+
+        renderNotifications();
+
+        if (state.currentRole === 'operator') {
+            playNotificationSound();
+            showToast(
+                'warning',
+                `🚨 Nuevo Reporte: ${incident.id}`,
+                `${catConfig.label} en ${incident.zone} — ${notif.reporter}${notif.phone ? ' (' + notif.phone + ')' : ''}`
+            );
+            announceStatus(`Alerta al operador: nuevo incidente ${incident.id}, ${catConfig.label}`);
+
+            // Native desktop notification if permitted
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification(`🚨 Nuevo Incidente: ${incident.id}`, {
+                    body: `${catConfig.label} en ${incident.zone}\nCiudadano: ${notif.reporter} (${notif.phone || 'Sin celular'})`
+                });
+            }
+        }
+    }
+
+    function renderNotifications() {
+        const badge = document.getElementById('operator-notif-badge');
+        const list = document.getElementById('operator-notif-list');
+        if (!badge || !list) return;
+
+        const unreadCount = state.notifications.filter(n => !n.read).length;
+        if (unreadCount > 0) {
+            badge.hidden = false;
+            badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+        } else {
+            badge.hidden = true;
+        }
+
+        if (state.notifications.length === 0) {
+            list.innerHTML = '<p class="notif-empty">No hay alertas recientes.</p>';
+            return;
+        }
+
+        list.innerHTML = state.notifications.map(n => `
+            <div class="notif-item ${n.read ? '' : 'unread'}" data-notif-id="${n.id}" data-incident-id="${n.incidentId}" role="button" tabindex="0">
+                <div class="notif-item-title">
+                    <span>🚨 ${n.incidentId} — ${n.categoryLabel}</span>
+                    ${!n.read ? '<span style="color:var(--color-primary);font-size:10px;">● Nuevo</span>' : ''}
+                </div>
+                <div class="notif-item-desc">Zona: ${n.zone}</div>
+                <div class="notif-item-contact">👤 ${n.reporter}${n.phone ? ' • 📞 ' + n.phone : ''}</div>
+                <div class="notif-item-time">${formatDate(n.date)}</div>
+            </div>
+        `).join('');
+
+        list.querySelectorAll('.notif-item').forEach(el => {
+            el.addEventListener('click', () => {
+                const nid = el.dataset.notifId;
+                const incId = el.dataset.incidentId;
+                const found = state.notifications.find(n => n.id === nid);
+                if (found) {
+                    found.read = true;
+                    localStorage.setItem('pp-operator-notifications', JSON.stringify(state.notifications));
+                    renderNotifications();
+                }
+                document.getElementById('operator-notif-panel').setAttribute('aria-hidden', 'true');
+                document.getElementById('operator-notif-btn').setAttribute('aria-expanded', 'false');
+                window.trackIncidentById(incId);
+            });
+        });
+    }
+
+    // ============================================================
     // INITIALIZATION
     // ============================================================
     function init() {
@@ -441,11 +813,13 @@
             state.incidents = generateSimulatedData();
         }
 
-        // Ensure all incidents have an evidence photo
+        // Ensure all incidents have an evidence photo and known IDs tracked
         state.incidents.forEach(inc => {
             if (!inc.photo) {
                 inc.photo = generateEvidencePhotoSvg(inc.category, inc.id, inc.date, inc.zone);
             }
+            if (!inc.phone && inc.contact) inc.phone = inc.contact;
+            state.knownIncidentIds.add(inc.id);
         });
         localStorage.setItem('pp-incidents', JSON.stringify(state.incidents));
 
@@ -461,6 +835,7 @@
         setupThemeToggle();
         setupAccessibilityPanel();
         setupRoleSwitch();
+        setupOperatorNotifications();
         populateZoneFilters();
         updateHomeStats();
         renderRecentIncidents();
@@ -468,11 +843,8 @@
         setupTrackSection();
         setupPhotoModal();
         initDatabaseSection();
-
-        // Set default date values
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('incident-date').value = today;
-        document.getElementById('incident-date').max = today;
+        setCurrentDateTime();
+        initBackendSync();
 
         // Hide loading
         setTimeout(() => {
@@ -505,6 +877,23 @@
     }
 
     function navigateTo(section) {
+        // Guard: Citizens CANNOT access the Database!
+        if (section === 'database' && state.currentRole !== 'operator') {
+            state.pendingNavigationAfterLogin = 'database';
+            showToast('warning', 'Acceso Restringido', 'La Base de Datos es exclusiva para Operadores (admin / admin).');
+            const loginModal = document.getElementById('operator-login-modal');
+            const sub = document.getElementById('operator-login-subtitle');
+            if (sub) sub.textContent = 'Acceso exclusivo requerido para ver la Base de Datos Municipal';
+            if (loginModal) {
+                document.getElementById('operator-id').value = '';
+                document.getElementById('operator-password').value = '';
+                document.getElementById('operator-login-error').textContent = '';
+                loginModal.hidden = false;
+                setTimeout(() => document.getElementById('operator-id').focus(), 150);
+            }
+            return;
+        }
+
         // Update sections
         document.querySelectorAll('.section').forEach(s => {
             s.classList.remove('active');
@@ -531,9 +920,12 @@
 
         state.currentSection = section;
 
-        // Initialize maps lazily
+        // Initialize maps lazily & update auto-time on Report
         if (section === 'map') initMainMap();
-        if (section === 'report') initReportMap();
+        if (section === 'report') {
+            initReportMap();
+            setCurrentDateTime();
+        }
         if (section === 'dashboard') initDashboard();
         if (section === 'heatmap') initHeatmap();
         if (section === 'database') renderDatabase();
@@ -739,6 +1131,10 @@
         }
 
         function openOperatorLoginModal() {
+            const sub = document.getElementById('operator-login-subtitle');
+            if (sub && !state.pendingNavigationAfterLogin) {
+                sub.textContent = 'Control Central | Municipalidad de Puente Piedra';
+            }
             idInput.value = '';
             passInput.value = '';
             passInput.type = 'password';
@@ -752,7 +1148,17 @@
             errorEl.textContent = '';
             if (revertSelect && state.currentRole !== 'operator') {
                 sel.value = 'citizen';
+                state.pendingNavigationAfterLogin = null;
             }
+        }
+
+        // Unlock button inside database locked notice
+        const dbUnlockBtn = document.getElementById('db-unlock-btn');
+        if (dbUnlockBtn) {
+            dbUnlockBtn.addEventListener('click', () => {
+                state.pendingNavigationAfterLogin = 'database';
+                openOperatorLoginModal();
+            });
         }
 
         // Click on role indicator badge in top navbar
