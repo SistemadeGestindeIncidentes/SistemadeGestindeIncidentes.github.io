@@ -62,6 +62,8 @@
     --color-accident-bg: rgba(245, 158, 11, 0.12);
     --color-trash: #10b981;
     --color-trash-bg: rgba(16, 185, 129, 0.12);
+    --color-other: #8b5cf6;
+    --color-other-bg: rgba(139, 92, 246, 0.12);
 
     /* Status Colors */
     --color-pending: #f59e0b;
@@ -2200,6 +2202,272 @@ textarea:focus-visible,
 }
 
 /* ============================================================
+   CATEGORY "OTHER", AUTO-TIME, & CONTACT FIELDS
+   ============================================================ */
+.check-custom.other-color { border-color: var(--color-other); }
+.glass-checkbox input:checked + .other-color { background: var(--color-other); border-color: var(--color-other); }
+.other-dot { background: var(--color-other); }
+.custom-marker.other-marker { background: var(--color-other); }
+.incident-cat-dot.other { background: var(--color-other); }
+
+.other-category-group {
+    animation: fadeIn 0.25s ease;
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    background: var(--color-other-bg);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.datetime-row,
+.reporter-contact-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+}
+
+.label-with-badge {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-xs);
+}
+.label-with-badge .form-label {
+    margin-bottom: 0;
+}
+.auto-time-badge {
+    font-size: 11px;
+    color: var(--color-primary);
+    border-color: var(--color-primary-light);
+    padding: 2px 8px;
+}
+.time-input-group {
+    display: flex;
+    gap: var(--space-xs);
+    align-items: center;
+}
+.btn-refresh-time {
+    flex-shrink: 0;
+    height: 38px;
+}
+
+/* ============================================================
+   PC DATABASE STATUS & OPERATOR NOTIFICATIONS
+   ============================================================ */
+.db-status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+}
+.db-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.db-status-dot.connected {
+    background: var(--color-success);
+    box-shadow: 0 0 6px var(--color-success);
+    animation: pulse-dot 2s infinite;
+}
+.db-status-dot.local {
+    background: var(--color-warning);
+}
+
+.notif-wrapper {
+    position: relative;
+}
+.notif-wrapper[hidden] {
+    display: none;
+}
+.notif-bell-btn {
+    position: relative;
+}
+.notif-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: var(--radius-full);
+    background: var(--color-error);
+    color: white;
+    font-size: 10px;
+    font-weight: var(--font-weight-bold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--color-bg);
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.5);
+}
+.notif-badge[hidden] {
+    display: none;
+}
+
+.notif-panel {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 340px;
+    max-height: 440px;
+    display: flex;
+    flex-direction: column;
+    z-index: 1200;
+    padding: var(--space-md);
+    transform: translateY(-10px);
+    opacity: 0;
+    visibility: hidden;
+    transition: all var(--transition-normal);
+}
+.notif-panel[aria-hidden="false"] {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+}
+.notif-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--glass-border-subtle);
+    margin-bottom: var(--space-sm);
+}
+.notif-panel-header h3 {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+}
+.notif-list {
+    overflow-y: auto;
+    max-height: 340px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+.notif-empty {
+    text-align: center;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+    padding: var(--space-lg) 0;
+}
+.notif-item {
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    background: var(--glass-background-light);
+    border: 1px solid var(--glass-border-subtle);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-align: left;
+}
+.notif-item:hover {
+    background: var(--color-surface-hover);
+    transform: translateX(2px);
+}
+.notif-item.unread {
+    border-left: 3px solid var(--color-primary);
+    background: var(--color-primary-light);
+}
+.notif-item-title {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.notif-item-desc {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    margin-top: 2px;
+}
+.notif-item-contact {
+    font-size: 11px;
+    color: var(--color-primary);
+    font-weight: var(--font-weight-medium);
+    margin-top: 3px;
+}
+.notif-item-time {
+    font-size: 10px;
+    color: var(--color-text-tertiary);
+    margin-top: 2px;
+}
+
+/* ============================================================
+   DATABASE LOCKED NOTICE & OPERATOR CONTACT BADGES
+   ============================================================ */
+.nav-lock-badge {
+    margin-left: auto;
+    font-size: 12px;
+}
+.db-locked-card {
+    max-width: 560px;
+    margin: var(--space-2xl) auto;
+    text-align: center;
+    padding: var(--space-2xl);
+}
+.locked-icon-circle {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto var(--space-md);
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+}
+.db-locked-card h3 {
+    font-size: var(--font-size-xl);
+    margin-bottom: var(--space-sm);
+}
+.db-locked-card p {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-lg);
+}
+
+.operator-contact-card {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-top: 6px;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--color-primary-light);
+    border: 1px solid var(--glass-border-subtle);
+    font-size: 12px;
+    color: var(--color-text);
+}
+.contact-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: var(--font-weight-medium);
+}
+.contact-phone-link {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: var(--font-weight-semibold);
+}
+.contact-phone-link:hover {
+    text-decoration: underline;
+}
+.lightbox-meta-reporter {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-xs) var(--space-md);
+    padding: var(--space-xs) 0;
+    margin-bottom: var(--space-xs);
+    border-top: 1px solid var(--glass-border-subtle);
+    color: var(--color-primary);
+}
+.lightbox-meta-reporter[hidden] {
+    display: none;
+}
+
+/* ============================================================
    RESPONSIVE
    ============================================================ */
 
@@ -2324,8 +2592,18 @@ textarea:focus-visible,
         min-width: auto;
         max-width: none;
     }
-    .navbar-role-indicator span:not(.role-dot) {
+    .navbar-role-indicator span:not(.role-dot),
+    .db-status-chip span:not(.db-status-dot) {
         display: none;
+    }
+    .datetime-row,
+    .reporter-contact-grid,
+    .lightbox-meta-reporter {
+        grid-template-columns: 1fr;
+    }
+    .notif-panel {
+        width: calc(100vw - 32px);
+        right: -50px;
     }
     .dashboard-stats-grid {
         grid-template-columns: repeat(2, 1fr);
